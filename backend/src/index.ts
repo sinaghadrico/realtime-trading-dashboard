@@ -1,7 +1,9 @@
+import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import tickerRoutes from './routes/tickers.js';
+import { setupWebSocket } from './services/websocket.js';
 
 const app = express();
 const PORT = process.env.PORT || 3075;
@@ -21,9 +23,14 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/tickers', tickerRoutes);
 
-app.listen(PORT, () => {
+const server = createServer(app);
+setupWebSocket(server);
+
+server.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Server running on http://localhost:${PORT}`);
+  // eslint-disable-next-line no-console
+  console.log(`WebSocket available at ws://localhost:${PORT}/ws`);
 });
 
 export default app;
