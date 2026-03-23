@@ -1,0 +1,29 @@
+{
+  "name": "trading-dashboard-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "jest --config jest.config.ts"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
