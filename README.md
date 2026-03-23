@@ -34,11 +34,41 @@ npm run dev
 
 Server runs on `http://localhost:3075`
 
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+App runs on `http://localhost:5178`
+
 ### Running Tests
 
 ```bash
 cd backend
 npm test
+```
+
+## Project Structure
+
+```
+├── backend/           # Node.js + Express + WebSocket server
+│   ├── src/
+│   │   ├── routes/    # REST API endpoints
+│   │   ├── services/  # Market data generator, WebSocket logic
+│   │   └── types/     # Shared TypeScript types
+│   └── tests/         # Jest + supertest tests
+├── frontend/          # React 19 + Vite + TypeScript
+│   ├── src/
+│   │   ├── components/  # UI and feature components
+│   │   ├── hooks/       # Custom hooks (WebSocket, data fetching)
+│   │   ├── services/    # API service layer
+│   │   ├── providers/   # Theme, Auth, Query providers
+│   │   └── types/       # Frontend TypeScript types
+│   └── tests/           # Vitest + RTL tests
+└── k8s/               # Kubernetes manifests
 ```
 
 ## API Reference
