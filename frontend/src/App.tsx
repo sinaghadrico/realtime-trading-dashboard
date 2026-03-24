@@ -2,6 +2,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Typography } from '@/components/ui/typography';
 import { Dashboard } from '@/components/Dashboard';
@@ -18,7 +19,9 @@ function App() {
               </Typography>
               <ThemeToggle />
             </header>
-            <Dashboard />
+            <ErrorBoundary>
+              <Dashboard />
+            </ErrorBoundary>
           </div>
           <Toaster />
         </TooltipProvider>

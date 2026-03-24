@@ -14,6 +14,7 @@ import {
   prefetchTickerHistory,
 } from '@/hooks/useTickerHistory';
 import type { TimeRange } from '@/components/TimeRangeSelector';
+import { toast } from 'sonner';
 import type { PriceUpdate } from '@/types';
 
 export function Dashboard() {
@@ -48,12 +49,22 @@ export function Dashboard() {
     [handlePriceUpdate, updateLivePrice],
   );
 
+  const onStatusChange = useCallback(
+    (status: Parameters<typeof handleStatusChange>[0]) => {
+      handleStatusChange(status);
+      if (status === 'disconnected') {
+        toast.error('Connection lost. Reconnecting...');
+      }
+    },
+    [handleStatusChange],
+  );
+
   const wsOptions = useMemo(
     () => ({
       onPriceUpdate,
-      onStatusChange: handleStatusChange,
+      onStatusChange,
     }),
-    [onPriceUpdate, handleStatusChange],
+    [onPriceUpdate, onStatusChange],
   );
 
   const { subscribe } = useWebSocket(wsOptions);
