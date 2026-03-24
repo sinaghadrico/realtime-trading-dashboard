@@ -15,7 +15,8 @@ import {
 } from '@/hooks/useTickerHistory';
 import type { TimeRange } from '@/components/TimeRangeSelector';
 import { toast } from 'sonner';
-import type { PriceUpdate } from '@/types';
+import { PriceAlertButton } from '@/components/PriceAlert';
+import type { PriceUpdate, WSServerMessage } from '@/types';
 
 export function Dashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>('1M');
@@ -59,12 +60,21 @@ export function Dashboard() {
     [handleStatusChange],
   );
 
+  const onAlert = useCallback((message: WSServerMessage) => {
+    if (message.type === 'alert_triggered') {
+      toast.warning(
+        `${message.alert.symbol} crossed ${message.alert.direction} $${message.alert.targetPrice.toLocaleString()} — Current: $${message.currentPrice.toLocaleString()}`,
+      );
+    }
+  }, []);
+
   const wsOptions = useMemo(
     () => ({
       onPriceUpdate,
       onStatusChange,
+      onAlert,
     }),
-    [onPriceUpdate, onStatusChange],
+    [onPriceUpdate, onStatusChange, onAlert],
   );
 
   const { subscribe } = useWebSocket(wsOptions);
@@ -121,18 +131,26 @@ export function Dashboard() {
         )}
 
         {selectedSymbol && selectedTicker ? (
-          <PriceChart
-            data={chartData}
-            symbol={selectedSymbol}
-            name={selectedTicker.name}
-            decimals={selectedTicker.decimals}
-            currentPrice={selectedTicker.price}
-            changePercent={selectedTicker.changePercent}
-            isLoading={chartLoading}
-            error={chartError}
-            timeRange={timeRange}
-            onTimeRangeChange={setTimeRange}
-          />
+          <>
+            <div className="mb-2 flex justify-end">
+              <PriceAlertButton
+                symbol={selectedSymbol}
+                currentPrice={selectedTicker.price}
+              />
+            </div>
+            <PriceChart
+              data={chartData}
+              symbol={selectedSymbol}
+              name={selectedTicker.name}
+              decimals={selectedTicker.decimals}
+              currentPrice={selectedTicker.price}
+              changePercent={selectedTicker.changePercent}
+              isLoading={chartLoading}
+              error={chartError}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+            />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center">
             <Typography variant="muted">

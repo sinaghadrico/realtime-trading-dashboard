@@ -1,10 +1,11 @@
-import type { Ticker, TickerHistory } from '@/types';
+import type { Ticker, TickerHistory, PriceAlert } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3075';
 
-async function request<T>(endpoint: string): Promise<T> {
+async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${endpoint}`, {
     credentials: 'include',
+    ...options,
   });
 
   if (!response.ok) {
@@ -30,4 +31,26 @@ export function fetchTickerHistory(
   return request<TickerHistory>(
     `/api/tickers/${encodeURIComponent(symbol)}/history?${params}`,
   );
+}
+
+export function fetchAlerts(): Promise<PriceAlert[]> {
+  return request<PriceAlert[]>('/api/alerts');
+}
+
+export function createAlert(
+  symbol: string,
+  targetPrice: number,
+  direction: 'above' | 'below',
+): Promise<PriceAlert> {
+  return request<PriceAlert>('/api/alerts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbol, targetPrice, direction }),
+  });
+}
+
+export function deleteAlertApi(id: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/api/alerts/${id}`, {
+    method: 'DELETE',
+  });
 }
