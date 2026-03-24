@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: trading-frontend
+  labels:
+    app: trading-frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: trading-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP

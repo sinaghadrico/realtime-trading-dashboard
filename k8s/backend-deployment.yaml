@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-backend
+  labels:
+    app: trading-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: trading-backend
+  template:
+    metadata:
+      labels:
+        app: trading-backend
+    spec:
+      containers:
+        - name: backend
+          image: trading-backend:latest
+          ports:
+            - containerPort: 3075
+          env:
+            - name: PORT
+              value: '3075'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: trading-secrets
+                  key: jwt-secret
+            - name: CORS_ORIGIN
+              value: http://trading-frontend
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '256Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3075
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3075
+            initialDelaySeconds: 10
+            periodSeconds: 30
