@@ -34,11 +34,13 @@ router.get('/:symbol/history', (req, res) => {
     return;
   }
 
-  const history = generateHistoricalData(ticker.symbol, days);
+  const interval = Number(req.query.interval) || 0;
+  const history = generateHistoricalData(ticker.symbol, days, interval);
   res.json({
     symbol: ticker.symbol,
     name: ticker.name,
     days,
+    interval,
     data: history,
   });
 });
