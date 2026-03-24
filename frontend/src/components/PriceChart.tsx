@@ -57,6 +57,7 @@ export function PriceChart({
   }, [data, changePercent]);
 
   const chartColor = isPositive ? '#22c55e' : '#ef4444';
+  const gradientId = `priceGradient-${symbol}`;
 
   const xAxisFormatter = useMemo(
     () => (data.length > 0 ? createChartXFormatter(data) : undefined),
@@ -130,7 +131,7 @@ export function PriceChart({
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
               <defs>
-                <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
                   <stop
                     offset="100%"
@@ -180,7 +181,7 @@ export function PriceChart({
                 dataKey="close"
                 stroke={chartColor}
                 strokeWidth={1.5}
-                fill="url(#priceGradient)"
+                fill={`url(#${gradientId})`}
                 animationDuration={300}
                 dot={false}
                 activeDot={{

@@ -50,16 +50,24 @@ export function Dashboard() {
 
   const { subscribe, unsubscribe } = useWebSocket(wsOptions);
 
+  const handleSelectTicker = useCallback(
+    (symbol: string) => {
+      setSelectedSymbol(symbol);
+      setTimeRange('1M');
+    },
+    [setSelectedSymbol],
+  );
+
   useEffect(() => {
     fetchTickers().then((data) => {
       initTickers(data);
       data.forEach((ticker) => subscribe(ticker.symbol));
 
-      // Pre-fetch all histories
+      // Pre-fetch default (1M) histories for all tickers
       data.forEach((ticker) => {
-        const cacheKey = `${ticker.symbol}_30`;
+        const cacheKey = `${ticker.symbol}_1M_30d_120m`;
         if (!historyCache.has(cacheKey)) {
-          fetchTickerHistory(ticker.symbol, 30).then((result) => {
+          fetchTickerHistory(ticker.symbol, 30, 120).then((result) => {
             historyCache.set(cacheKey, result.data);
           });
         }
@@ -83,7 +91,7 @@ export function Dashboard() {
         <TickerList
           tickers={tickers}
           selectedSymbol={selectedSymbol}
-          onSelect={setSelectedSymbol}
+          onSelect={handleSelectTicker}
           isLoading={tickers.length === 0}
         />
       </aside>
