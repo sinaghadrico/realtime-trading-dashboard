@@ -1,14 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { PriceUpdate, Ticker } from '@/types';
+import type { PriceUpdate, Ticker, TickerWithLive } from '@/types';
 import type { ConnectionStatus } from '@/hooks/useWebSocket';
 import { fetchTickers } from '@/services/api';
-
-interface TickerWithLive extends Ticker {
-  change: number;
-  changePercent: number;
-  lastUpdate: number;
-}
 
 export function useTickers() {
   const [livePrices, setLivePrices] = useState<Map<string, TickerWithLive>>(

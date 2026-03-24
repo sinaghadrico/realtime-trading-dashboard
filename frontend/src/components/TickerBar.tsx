@@ -3,18 +3,10 @@ import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Typography } from '@/components/ui/typography';
 import { formatPrice } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-
-interface TickerData {
-  symbol: string;
-  name: string;
-  price: number;
-  decimals: number;
-  change: number;
-  changePercent: number;
-}
+import type { TickerWithLive } from '@/types';
 
 interface TickerBarProps {
-  tickers: TickerData[];
+  tickers: TickerWithLive[];
   selectedSymbol: string | null;
   onSelect: (symbol: string) => void;
 }

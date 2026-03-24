@@ -1,18 +1,10 @@
 import { TickerItem } from '@/components/TickerItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Typography } from '@/components/ui/typography';
-
-interface TickerData {
-  symbol: string;
-  name: string;
-  price: number;
-  decimals: number;
-  change: number;
-  changePercent: number;
-}
+import type { TickerWithLive } from '@/types';
 
 interface TickerListProps {
-  tickers: TickerData[];
+  tickers: TickerWithLive[];
   selectedSymbol: string | null;
   onSelect: (symbol: string) => void;
   isLoading?: boolean;

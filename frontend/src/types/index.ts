@@ -21,6 +21,12 @@ export interface TickerHistory {
   data: OHLC[];
 }
 
+export interface TickerWithLive extends Ticker {
+  change: number;
+  changePercent: number;
+  lastUpdate: number;
+}
+
 export interface PriceUpdate {
   symbol: string;
   price: number;
