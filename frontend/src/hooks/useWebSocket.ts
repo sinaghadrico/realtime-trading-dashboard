@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import type { WSServerMessage, WSClientMessage, PriceUpdate } from '@/types';
+import type { WSServerMessage, PriceUpdate } from '@/types';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3075';
 const MAX_RECONNECT_DELAY = 30000;
@@ -7,70 +7,62 @@ const INITIAL_RECONNECT_DELAY = 1000;
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
-interface UseWebSocketReturn {
-  subscribe: (symbol: string) => void;
-  unsubscribe: (symbol: string) => void;
-}
-
 interface UseWebSocketOptions {
+  symbols: string[];
   onPriceUpdate?: (data: PriceUpdate) => void;
   onStatusChange?: (status: ConnectionStatus) => void;
   onAlert?: (alert: WSServerMessage) => void;
 }
 
-export function useWebSocket(
-  options: UseWebSocketOptions = {},
-): UseWebSocketReturn {
+export function useWebSocket({
+  symbols,
+  onPriceUpdate,
+  onStatusChange,
+  onAlert,
+}: UseWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const subscriptionsRef = useRef(new Set<string>());
-  const optionsRef = useRef(options);
+  const callbacksRef = useRef({ onPriceUpdate, onStatusChange, onAlert });
+  const symbolsRef = useRef(symbols);
 
   useEffect(() => {
-    optionsRef.current = options;
-  }, [options]);
+    callbacksRef.current = { onPriceUpdate, onStatusChange, onAlert };
+  }, [onPriceUpdate, onStatusChange, onAlert]);
 
-  const send = useCallback((message: WSClientMessage) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
+  useEffect(() => {
+    symbolsRef.current = symbols;
+  }, [symbols]);
+
+  // Subscribe when symbols change and WS is open
+  useEffect(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (symbols.length === 0) return;
+
+    symbols.forEach((symbol) => {
+      wsRef.current?.send(JSON.stringify({ type: 'subscribe', symbol }));
+    });
+  }, [symbols]);
+
+  const reconnect = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
     }
-  }, []);
-
-  const subscribe = useCallback(
-    (symbol: string) => {
-      subscriptionsRef.current.add(symbol);
-      send({ type: 'subscribe', symbol });
-    },
-    [send],
-  );
-
-  const unsubscribe = useCallback(
-    (symbol: string) => {
-      subscriptionsRef.current.delete(symbol);
-      send({ type: 'unsubscribe', symbol });
-    },
-    [send],
-  );
-
-  useEffect(() => {
-    let disposed = false;
+    if (wsRef.current) {
+      wsRef.current.close(1000);
+      wsRef.current = null;
+    }
 
     function connect() {
-      if (disposed) return;
-
-      optionsRef.current.onStatusChange?.('connecting');
+      callbacksRef.current.onStatusChange?.('connecting');
       const ws = new WebSocket(`${WS_URL}/ws`);
 
       ws.onopen = () => {
-        if (disposed) {
-          ws.close(1000);
-          return;
-        }
-        optionsRef.current.onStatusChange?.('connected');
+        callbacksRef.current.onStatusChange?.('connected');
         reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
 
-        Array.from(subscriptionsRef.current).forEach((symbol) => {
+        // Subscribe to all current symbols
+        symbolsRef.current.forEach((symbol) => {
           ws.send(JSON.stringify({ type: 'subscribe', symbol }));
         });
       };
@@ -80,20 +72,20 @@ export function useWebSocket(
           const message = JSON.parse(event.data as string) as WSServerMessage;
 
           if (message.type === 'price_update') {
-            optionsRef.current.onPriceUpdate?.(message.data);
+            callbacksRef.current.onPriceUpdate?.(message.data);
           } else if (message.type === 'alert_triggered') {
-            optionsRef.current.onAlert?.(message);
+            callbacksRef.current.onAlert?.(message);
           }
         } catch {
-          // ignore malformed messages
+          // ignore
         }
       };
 
       ws.onclose = (event) => {
-        optionsRef.current.onStatusChange?.('disconnected');
+        callbacksRef.current.onStatusChange?.('disconnected');
         wsRef.current = null;
 
-        if (!disposed && event.code !== 1000) {
+        if (event.code !== 1000) {
           const delay = reconnectDelayRef.current;
           reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
           reconnectTimerRef.current = setTimeout(connect, delay);
@@ -108,9 +100,13 @@ export function useWebSocket(
     }
 
     connect();
+  }, []);
+
+  // Connect on mount
+  useEffect(() => {
+    reconnect();
 
     return () => {
-      disposed = true;
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
       }
@@ -119,7 +115,5 @@ export function useWebSocket(
         wsRef.current = null;
       }
     };
-  }, []);
-
-  return { subscribe, unsubscribe };
+  }, [reconnect]);
 }

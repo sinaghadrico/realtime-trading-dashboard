@@ -1,5 +1,6 @@
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
+import { NuqsAdapter } from 'nuqs/adapters/react';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -25,18 +26,20 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryProvider>
-      <ThemeProvider>
-        <TooltipProvider>
-          <AuthProvider>
-            <ErrorBoundary>
-              <AppContent />
-            </ErrorBoundary>
-          </AuthProvider>
-          <Toaster />
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryProvider>
+    <NuqsAdapter>
+      <QueryProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <AuthProvider>
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            </AuthProvider>
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryProvider>
+    </NuqsAdapter>
   );
 }
 

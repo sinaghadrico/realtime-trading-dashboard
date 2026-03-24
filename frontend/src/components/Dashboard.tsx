@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useQueryState, parseAsString } from 'nuqs';
 import { TickerList } from '@/components/TickerList';
 import { TickerBar } from '@/components/TickerBar';
 import { PriceChart } from '@/components/PriceChart';
@@ -14,8 +15,21 @@ import { toast } from 'sonner';
 import { PriceAlertButton } from '@/components/PriceAlert';
 import type { PriceUpdate, WSServerMessage } from '@/types';
 
+const VALID_RANGES = ['1H', '24H', '1W', '1M', '1Y'] as const;
+
 export function Dashboard() {
-  const [timeRange, setTimeRange] = useState<TimeRange>('1M');
+  const [timeRangeParam, setTimeRangeParam] = useQueryState(
+    'range',
+    parseAsString.withDefault('1M'),
+  );
+  const timeRange = (
+    VALID_RANGES.includes(timeRangeParam as TimeRange) ? timeRangeParam : '1M'
+  ) as TimeRange;
+  const setTimeRange = useCallback(
+    (range: TimeRange) => setTimeRangeParam(range),
+    [setTimeRangeParam],
+  );
+
   const isDesktop = useIsDesktop();
 
   const {
@@ -25,7 +39,6 @@ export function Dashboard() {
     connectionStatus,
     isLoading: tickersLoading,
     setSelectedSymbol,
-    initTickers,
     handlePriceUpdate,
     handleStatusChange,
   } = useTickers();
@@ -63,38 +76,26 @@ export function Dashboard() {
     }
   }, []);
 
-  const wsOptions = useMemo(
-    () => ({
-      onPriceUpdate,
-      onStatusChange,
-      onAlert,
-    }),
-    [onPriceUpdate, onStatusChange, onAlert],
-  );
+  // Pass symbols list directly to WS hook
+  const symbols = useMemo(() => tickers.map((t) => t.symbol), [tickers]);
 
-  const { subscribe } = useWebSocket(wsOptions);
+  useWebSocket({
+    symbols,
+    onPriceUpdate,
+    onStatusChange,
+    onAlert,
+  });
 
   const handleSelectTicker = useCallback(
     (symbol: string) => {
       setSelectedSymbol(symbol);
       setTimeRange('1M');
     },
-    [setSelectedSymbol],
+    [setSelectedSymbol, setTimeRange],
   );
-
-  useEffect(() => {
-    if (tickers.length === 0) return;
-
-    initTickers(tickers);
-    tickers.forEach((ticker) => {
-      subscribe(ticker.symbol);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickers.length > 0]);
 
   return (
     <div className="flex h-[calc(100vh-65px)] flex-col md:flex-row">
-      {/* Desktop: sidebar */}
       {isDesktop && (
         <aside className="w-72 flex-shrink-0 overflow-y-auto border-r p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -111,9 +112,7 @@ export function Dashboard() {
         </aside>
       )}
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        {/* Mobile: horizontal ticker bar */}
         {!isDesktop && (
           <div className="mb-4">
             <TickerBar
