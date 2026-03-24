@@ -1,6 +1,7 @@
 import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import tickerRoutes from './routes/tickers.js';
 import { setupWebSocket } from './services/websocket.js';
@@ -8,6 +9,7 @@ import { setupWebSocket } from './services/websocket.js';
 const app = express();
 const PORT = process.env.PORT || 3075;
 
+app.use(compression());
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:5178',

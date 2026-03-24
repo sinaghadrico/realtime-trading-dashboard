@@ -21,9 +21,13 @@ router.get('/', (_req, res) => {
   res.json(tickers);
 });
 
+// Pre-serialized cache for history responses
+const responseCache = new Map<string, string>();
+
 router.get('/:symbol/history', (req, res) => {
   const { symbol } = req.params;
   const days = Math.min(Number(req.query.days) || 30, 365);
+  const interval = Number(req.query.interval) || 0;
 
   const ticker = TICKERS.find(
     (t) => t.symbol.toLowerCase() === symbol.toLowerCase(),
@@ -34,15 +38,32 @@ router.get('/:symbol/history', (req, res) => {
     return;
   }
 
-  const interval = Number(req.query.interval) || 0;
+  // Check pre-serialized response cache
+  const cacheKey = `${ticker.symbol}_${days}_${interval}`;
+  const cached = responseCache.get(cacheKey);
+
+  if (cached) {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.set('Content-Type', 'application/json');
+    res.send(cached);
+    return;
+  }
+
   const history = generateHistoricalData(ticker.symbol, days, interval);
-  res.json({
+  const body = JSON.stringify({
     symbol: ticker.symbol,
     name: ticker.name,
     days,
     interval,
     data: history,
   });
+
+  // Cache the serialized response
+  responseCache.set(cacheKey, body);
+
+  res.set('Cache-Control', 'public, max-age=300');
+  res.set('Content-Type', 'application/json');
+  res.send(body);
 });
 
 export default router;
