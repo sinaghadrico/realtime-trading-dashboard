@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useCallback, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { TickerList } from '@/components/TickerList';
 import { TickerBar } from '@/components/TickerBar';
 import { PriceChart } from '@/components/PriceChart';
@@ -9,10 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTickers } from '@/hooks/useTickers';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
-import {
-  useTickerHistory,
-  prefetchTickerHistory,
-} from '@/hooks/useTickerHistory';
+import { useTickerHistory } from '@/hooks/useTickerHistory';
 import type { TimeRange } from '@/components/TimeRangeSelector';
 import { toast } from 'sonner';
 import { PriceAlertButton } from '@/components/PriceAlert';
@@ -20,7 +16,6 @@ import type { PriceUpdate, WSServerMessage } from '@/types';
 
 export function Dashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>('1M');
-  const queryClient = useQueryClient();
   const isDesktop = useIsDesktop();
 
   const {
@@ -93,7 +88,6 @@ export function Dashboard() {
     initTickers(tickers);
     tickers.forEach((ticker) => {
       subscribe(ticker.symbol);
-      prefetchTickerHistory(queryClient, ticker.symbol, '1M');
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickers.length > 0]);
