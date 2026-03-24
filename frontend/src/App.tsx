@@ -2,27 +2,37 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
+import { AuthProvider } from '@/providers/AuthProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { Typography } from '@/components/ui/typography';
-import { Dashboard } from '@/components/Dashboard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { LoginPage } from '@/pages/LoginPage';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { useAuth } from '@/hooks/useAuth';
+
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Skeleton className="h-10 w-40 rounded-md" />
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <DashboardPage /> : <LoginPage />;
+}
 
 function App() {
   return (
     <QueryProvider>
       <ThemeProvider>
         <TooltipProvider>
-          <div className="min-h-screen bg-background text-foreground">
-            <header className="flex items-center justify-between border-b px-4 py-3 md:px-6 md:py-4">
-              <Typography variant="h4" as="h1">
-                Trading Dashboard
-              </Typography>
-              <ThemeToggle />
-            </header>
+          <AuthProvider>
             <ErrorBoundary>
-              <Dashboard />
+              <AppContent />
             </ErrorBoundary>
-          </div>
+          </AuthProvider>
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
