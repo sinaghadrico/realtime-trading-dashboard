@@ -23,6 +23,7 @@ A real-time cryptocurrency and stock trading dashboard with live price streaming
 
 - Node.js >= 22
 - npm >= 10
+- Docker (optional)
 
 ### Backend
 
@@ -44,10 +45,23 @@ npm run dev
 
 App runs on `http://localhost:5178`
 
+### Run with Docker
+
+```bash
+docker-compose up --build
+```
+
+frontend runs on `http://localhost:5178`, backend on `http://localhost:3075`.
+
 ### Running Tests
 
 ```bash
+# Backend
 cd backend
+npm test
+
+# Frontend
+cd frontend
 npm test
 ```
 
