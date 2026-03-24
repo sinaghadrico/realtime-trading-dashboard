@@ -4,6 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import tickerRoutes from './routes/tickers.js';
+import alertRoutes from './routes/alerts.js';
 import { setupWebSocket } from './services/websocket.js';
 
 const app = express();
@@ -24,6 +25,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/tickers', tickerRoutes);
+app.use('/api/alerts', alertRoutes);
 
 const server = createServer(app);
 setupWebSocket(server);

@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { Server } from 'http';
 import type { WSClientMessage, WSServerMessage } from '../types/index.js';
 import { TICKERS, getNextPrice } from './marketData.js';
+import { checkAlerts } from './alertService.js';
 
 const BROADCAST_INTERVAL = 1000;
 
@@ -90,6 +91,20 @@ function broadcastPrices(): void {
     for (const [ws, state] of clients) {
       if (state.subscriptions.has(symbol)) {
         send(ws, message);
+      }
+    }
+
+    // Check price alerts
+    const triggered = checkAlerts(symbol, priceUpdate.price);
+    for (const alert of triggered) {
+      const alertMessage: WSServerMessage = {
+        type: 'alert_triggered',
+        alert,
+        currentPrice: priceUpdate.price,
+      };
+      // Broadcast to all connected clients
+      for (const [ws] of clients) {
+        send(ws, alertMessage);
       }
     }
   }
