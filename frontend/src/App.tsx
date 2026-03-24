@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Typography } from '@/components/ui/typography';
+import { Dashboard } from '@/components/Dashboard';
 
 function App() {
   return (
@@ -15,9 +16,7 @@ function App() {
             </Typography>
             <ThemeToggle />
           </header>
-          <main className="p-6">
-            <Typography variant="muted">Main</Typography>
-          </main>
+          <Dashboard />
         </div>
         <Toaster />
       </TooltipProvider>
