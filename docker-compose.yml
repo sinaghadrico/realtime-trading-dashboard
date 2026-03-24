@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '3075:3075'
+    environment:
+      - PORT=3075
+      - CORS_ORIGIN=http://localhost
+      - JWT_SECRET=docker-secret-key
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
+    restart: unless-stopped
