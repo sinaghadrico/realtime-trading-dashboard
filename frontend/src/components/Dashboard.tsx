@@ -1,15 +1,22 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import { TickerList } from '@/components/TickerList';
+import { PriceChart } from '@/components/PriceChart';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { Typography } from '@/components/ui/typography';
 import { Separator } from '@/components/ui/separator';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTickers } from '@/hooks/useTickers';
-import { fetchTickers } from '@/services/api';
+import { useTickerHistory, historyCache } from '@/hooks/useTickerHistory';
+import { fetchTickers, fetchTickerHistory } from '@/services/api';
+import type { TimeRange } from '@/components/TimeRangeSelector';
+import type { PriceUpdate } from '@/types';
 
 export function Dashboard() {
+  const [timeRange, setTimeRange] = useState<TimeRange>('1M');
+
   const {
     tickers,
+    selectedTicker,
     selectedSymbol,
     connectionStatus,
     setSelectedSymbol,
@@ -18,12 +25,27 @@ export function Dashboard() {
     handleStatusChange,
   } = useTickers();
 
+  const {
+    data: chartData,
+    isLoading: chartLoading,
+    error: chartError,
+    updateLivePrice,
+  } = useTickerHistory(selectedSymbol, timeRange);
+
+  const onPriceUpdate = useCallback(
+    (data: PriceUpdate) => {
+      handlePriceUpdate(data);
+      updateLivePrice(data);
+    },
+    [handlePriceUpdate, updateLivePrice],
+  );
+
   const wsOptions = useMemo(
     () => ({
-      onPriceUpdate: handlePriceUpdate,
+      onPriceUpdate,
       onStatusChange: handleStatusChange,
     }),
-    [handlePriceUpdate, handleStatusChange],
+    [onPriceUpdate, handleStatusChange],
   );
 
   const { subscribe, unsubscribe } = useWebSocket(wsOptions);
@@ -32,6 +54,16 @@ export function Dashboard() {
     fetchTickers().then((data) => {
       initTickers(data);
       data.forEach((ticker) => subscribe(ticker.symbol));
+
+      // Pre-fetch all histories
+      data.forEach((ticker) => {
+        const cacheKey = `${ticker.symbol}_30`;
+        if (!historyCache.has(cacheKey)) {
+          fetchTickerHistory(ticker.symbol, 30).then((result) => {
+            historyCache.set(cacheKey, result.data);
+          });
+        }
+      });
     });
 
     return () => {
@@ -57,11 +89,26 @@ export function Dashboard() {
       </aside>
 
       <main className="flex-1 overflow-y-auto p-6">
-        <Typography variant="muted">
-          {selectedSymbol
-            ? `Chart for ${selectedSymbol} coming soon...`
-            : 'Select a ticker'}
-        </Typography>
+        {selectedSymbol && selectedTicker ? (
+          <PriceChart
+            data={chartData}
+            symbol={selectedSymbol}
+            name={selectedTicker.name}
+            decimals={selectedTicker.decimals}
+            currentPrice={selectedTicker.price}
+            changePercent={selectedTicker.changePercent}
+            isLoading={chartLoading}
+            error={chartError}
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <Typography variant="muted">
+              Select a ticker to view chart
+            </Typography>
+          </div>
+        )}
       </main>
     </div>
   );

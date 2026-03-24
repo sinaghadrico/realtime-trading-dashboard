@@ -21,8 +21,13 @@ export function fetchTickers(): Promise<Ticker[]> {
 export function fetchTickerHistory(
   symbol: string,
   days = 30,
+  intervalMinutes = 0,
 ): Promise<TickerHistory> {
+  const params = new URLSearchParams({ days: String(days) });
+  if (intervalMinutes > 0) {
+    params.set('interval', String(intervalMinutes));
+  }
   return request<TickerHistory>(
-    `/api/tickers/${encodeURIComponent(symbol)}/history?days=${days}`,
+    `/api/tickers/${encodeURIComponent(symbol)}/history?${params}`,
   );
 }

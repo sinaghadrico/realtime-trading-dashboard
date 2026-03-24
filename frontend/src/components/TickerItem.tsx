@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Typography } from '@/components/ui/typography';
+import { formatPrice } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
 interface TickerItemProps {
@@ -12,15 +13,6 @@ interface TickerItemProps {
   changePercent: number;
   isSelected: boolean;
   onSelect: () => void;
-}
-
-function formatPrice(price: number, decimals: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: Math.min(decimals, 4),
-  }).format(price);
 }
 
 export const TickerItem = memo(function TickerItem({
