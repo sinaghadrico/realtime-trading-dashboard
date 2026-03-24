@@ -115,19 +115,19 @@ export function PriceChart({
 
       {/* Chart */}
       {isLoading ? (
-        <Skeleton className="h-[400px] w-full rounded-lg" />
+        <Skeleton className="h-[300px] md:h-[400px] w-full rounded-lg" />
       ) : error ? (
-        <Card className="flex h-[400px] items-center justify-center">
+        <Card className="flex h-[300px] md:h-[400px] items-center justify-center">
           <Typography variant="muted" className="text-destructive">
             Failed to load chart: {error}
           </Typography>
         </Card>
       ) : data.length === 0 ? (
-        <Card className="flex h-[400px] items-center justify-center">
+        <Card className="flex h-[300px] md:h-[400px] items-center justify-center">
           <Typography variant="muted">No data available</Typography>
         </Card>
       ) : (
-        <div className="h-[400px] w-full">
+        <div className="h-[300px] md:h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
               <defs>

@@ -12,8 +12,8 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <div className="min-h-screen bg-background text-foreground">
-            <header className="flex items-center justify-between border-b px-6 py-4">
-              <Typography variant="h3" as="h1">
+            <header className="flex items-center justify-between border-b px-4 py-3 md:px-6 md:py-4">
+              <Typography variant="h4" as="h1">
                 Trading Dashboard
               </Typography>
               <ThemeToggle />

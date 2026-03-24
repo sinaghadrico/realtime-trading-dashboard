@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { TickerList } from '@/components/TickerList';
+import { TickerBar } from '@/components/TickerBar';
 import { PriceChart } from '@/components/PriceChart';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { Typography } from '@/components/ui/typography';
 import { Separator } from '@/components/ui/separator';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTickers } from '@/hooks/useTickers';
+import { useIsDesktop } from '@/hooks/useMediaQuery';
 import {
   useTickerHistory,
   prefetchTickerHistory,
@@ -17,6 +19,7 @@ import type { PriceUpdate } from '@/types';
 export function Dashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>('1M');
   const queryClient = useQueryClient();
+  const isDesktop = useIsDesktop();
 
   const {
     tickers,
@@ -63,7 +66,6 @@ export function Dashboard() {
     [setSelectedSymbol],
   );
 
-  // Subscribe to WS and pre-fetch histories when tickers load
   useEffect(() => {
     if (tickers.length === 0) return;
 
@@ -76,22 +78,37 @@ export function Dashboard() {
   }, [tickers.length > 0]);
 
   return (
-    <div className="flex h-[calc(100vh-65px)]">
-      <aside className="hidden w-72 flex-shrink-0 overflow-y-auto border-r p-4 md:block">
-        <div className="mb-3 flex items-center justify-between">
-          <Typography variant="h4">Tickers</Typography>
-          <ConnectionStatus status={connectionStatus} />
-        </div>
-        <Separator className="mb-3" />
-        <TickerList
-          tickers={tickers}
-          selectedSymbol={selectedSymbol}
-          onSelect={handleSelectTicker}
-          isLoading={tickersLoading}
-        />
-      </aside>
+    <div className="flex h-[calc(100vh-65px)] flex-col md:flex-row">
+      {/* Desktop: sidebar */}
+      {isDesktop && (
+        <aside className="w-72 flex-shrink-0 overflow-y-auto border-r p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <Typography variant="h4">Tickers</Typography>
+            <ConnectionStatus status={connectionStatus} />
+          </div>
+          <Separator className="mb-3" />
+          <TickerList
+            tickers={tickers}
+            selectedSymbol={selectedSymbol}
+            onSelect={handleSelectTicker}
+            isLoading={tickersLoading}
+          />
+        </aside>
+      )}
 
-      <main className="flex-1 overflow-y-auto p-6">
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        {/* Mobile: horizontal ticker bar */}
+        {!isDesktop && (
+          <div className="mb-4">
+            <TickerBar
+              tickers={tickers}
+              selectedSymbol={selectedSymbol}
+              onSelect={handleSelectTicker}
+            />
+          </div>
+        )}
+
         {selectedSymbol && selectedTicker ? (
           <PriceChart
             data={chartData}
