@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OHLC, PriceUpdate } from '@/types';
 import type { TimeRange } from '@/components/TimeRangeSelector';
 import { fetchTickerHistory } from '@/services/api';
-
-export const historyCache = new Map<string, OHLC[]>();
 
 interface RangeConfig {
   days: number;
@@ -19,9 +18,8 @@ const RANGE_CONFIG: Record<TimeRange, RangeConfig> = {
   '1Y': { days: 365, intervalMinutes: 0 },
 };
 
-function getCacheKey(symbol: string, range: TimeRange): string {
-  const { days, intervalMinutes } = RANGE_CONFIG[range];
-  return `${symbol}_${range}_${days}d_${intervalMinutes}m`;
+function queryKey(symbol: string, range: TimeRange) {
+  return ['tickerHistory', symbol, range] as const;
 }
 
 interface UseTickerHistoryReturn {
@@ -35,71 +33,35 @@ export function useTickerHistory(
   symbol: string | null,
   range: TimeRange = '1M',
 ): UseTickerHistoryReturn {
-  const [data, setData] = useState<OHLC[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!symbol) {
-      queueMicrotask(() => setData([]));
-      return;
-    }
+  const { data, isLoading, error } = useQuery({
+    queryKey: queryKey(symbol ?? '', range),
+    queryFn: async () => {
+      if (!symbol) return [];
 
-    const cacheKey = getCacheKey(symbol, range);
-    const cached = historyCache.get(cacheKey);
+      const { days, intervalMinutes, filterHours } = RANGE_CONFIG[range];
+      const result = await fetchTickerHistory(symbol, days, intervalMinutes);
 
-    if (cached) {
-      queueMicrotask(() => {
-        setData(cached);
-        setIsLoading(false);
-      });
-      return;
-    }
+      let filtered = result.data;
+      if (filterHours) {
+        const cutoff = Date.now() - filterHours * 60 * 60 * 1000;
+        filtered = filtered.filter((d) => d.timestamp >= cutoff);
+      }
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchTickerHistory(
-      symbol,
-      RANGE_CONFIG[range].days,
-      RANGE_CONFIG[range].intervalMinutes,
-    )
-      .then((result) => {
-        if (controller.signal.aborted) return;
-
-        let filtered = result.data;
-        const { filterHours } = RANGE_CONFIG[range];
-        if (filterHours) {
-          const cutoff = Date.now() - filterHours * 60 * 60 * 1000;
-          filtered = filtered.filter((d) => d.timestamp >= cutoff);
-        }
-
-        historyCache.set(cacheKey, filtered);
-        setData(filtered);
-        setIsLoading(false);
-      })
-      .catch((err: Error) => {
-        if (controller.signal.aborted) return;
-        setError(err.message);
-        setIsLoading(false);
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, [symbol, range]);
+      return filtered;
+    },
+    enabled: !!symbol,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   const updateLivePrice = useCallback(
     (update: PriceUpdate) => {
-      if (update.symbol !== symbol) return;
+      if (!symbol || update.symbol !== symbol) return;
 
-      setData((prev) => {
-        if (prev.length === 0) return prev;
+      queryClient.setQueryData<OHLC[]>(queryKey(symbol, range), (prev) => {
+        if (!prev || prev.length === 0) return prev;
 
         const next = [...prev];
         const last = { ...next[next.length - 1] };
@@ -112,8 +74,28 @@ export function useTickerHistory(
         return next;
       });
     },
-    [symbol],
+    [symbol, range, queryClient],
   );
 
-  return { data, isLoading, error, updateLivePrice };
+  return {
+    data: data ?? [],
+    isLoading,
+    error: error ? (error as Error).message : null,
+    updateLivePrice,
+  };
+}
+
+// Pre-fetch history for a symbol (called on initial load)
+export function prefetchTickerHistory(
+  queryClient: ReturnType<typeof useQueryClient>,
+  symbol: string,
+  range: TimeRange = '1M',
+) {
+  const { days, intervalMinutes } = RANGE_CONFIG[range];
+  return queryClient.prefetchQuery({
+    queryKey: queryKey(symbol, range),
+    queryFn: () =>
+      fetchTickerHistory(symbol, days, intervalMinutes).then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
 }

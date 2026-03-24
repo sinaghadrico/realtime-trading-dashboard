@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { TickerList } from '@/components/TickerList';
 import { PriceChart } from '@/components/PriceChart';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
@@ -6,19 +7,23 @@ import { Typography } from '@/components/ui/typography';
 import { Separator } from '@/components/ui/separator';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTickers } from '@/hooks/useTickers';
-import { useTickerHistory, historyCache } from '@/hooks/useTickerHistory';
-import { fetchTickers, fetchTickerHistory } from '@/services/api';
+import {
+  useTickerHistory,
+  prefetchTickerHistory,
+} from '@/hooks/useTickerHistory';
 import type { TimeRange } from '@/components/TimeRangeSelector';
 import type { PriceUpdate } from '@/types';
 
 export function Dashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>('1M');
+  const queryClient = useQueryClient();
 
   const {
     tickers,
     selectedTicker,
     selectedSymbol,
     connectionStatus,
+    isLoading: tickersLoading,
     setSelectedSymbol,
     initTickers,
     handlePriceUpdate,
@@ -48,7 +53,7 @@ export function Dashboard() {
     [onPriceUpdate, handleStatusChange],
   );
 
-  const { subscribe, unsubscribe } = useWebSocket(wsOptions);
+  const { subscribe } = useWebSocket(wsOptions);
 
   const handleSelectTicker = useCallback(
     (symbol: string) => {
@@ -58,27 +63,17 @@ export function Dashboard() {
     [setSelectedSymbol],
   );
 
+  // Subscribe to WS and pre-fetch histories when tickers load
   useEffect(() => {
-    fetchTickers().then((data) => {
-      initTickers(data);
-      data.forEach((ticker) => subscribe(ticker.symbol));
+    if (tickers.length === 0) return;
 
-      // Pre-fetch default (1M) histories for all tickers
-      data.forEach((ticker) => {
-        const cacheKey = `${ticker.symbol}_1M_30d_120m`;
-        if (!historyCache.has(cacheKey)) {
-          fetchTickerHistory(ticker.symbol, 30, 120).then((result) => {
-            historyCache.set(cacheKey, result.data);
-          });
-        }
-      });
+    initTickers(tickers);
+    tickers.forEach((ticker) => {
+      subscribe(ticker.symbol);
+      prefetchTickerHistory(queryClient, ticker.symbol, '1M');
     });
-
-    return () => {
-      tickers.forEach((ticker) => unsubscribe(ticker.symbol));
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tickers.length > 0]);
 
   return (
     <div className="flex h-[calc(100vh-65px)]">
@@ -92,7 +87,7 @@ export function Dashboard() {
           tickers={tickers}
           selectedSymbol={selectedSymbol}
           onSelect={handleSelectTicker}
-          isLoading={tickers.length === 0}
+          isLoading={tickersLoading}
         />
       </aside>
 

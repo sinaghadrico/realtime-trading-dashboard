@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { PriceUpdate, Ticker } from '@/types';
 import type { ConnectionStatus } from '@/hooks/useWebSocket';
+import { fetchTickers } from '@/services/api';
 
 interface TickerWithLive extends Ticker {
   change: number;
@@ -9,37 +11,40 @@ interface TickerWithLive extends Ticker {
 }
 
 export function useTickers() {
-  const [tickers, setTickers] = useState<Map<string, TickerWithLive>>(
+  const [livePrices, setLivePrices] = useState<Map<string, TickerWithLive>>(
     new Map(),
   );
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>('disconnected');
 
-  const initTickers = useCallback((tickerList: Ticker[]) => {
-    setTickers((prev) => {
-      const next = new Map(prev);
-      for (const ticker of tickerList) {
-        if (!next.has(ticker.symbol)) {
-          next.set(ticker.symbol, {
-            ...ticker,
-            change: 0,
-            changePercent: 0,
-            lastUpdate: Date.now(),
-          });
-        }
-      }
-      return next;
-    });
+  const { data: initialTickers = [], isLoading } = useQuery({
+    queryKey: ['tickers'],
+    queryFn: fetchTickers,
+    staleTime: 60 * 1000,
+  });
 
-    setSelectedSymbol((prev) => {
-      if (prev) return prev;
-      return tickerList[0]?.symbol ?? null;
-    });
-  }, []);
+  // Merge initial tickers with live prices
+  const tickers: TickerWithLive[] = initialTickers.map((ticker) => {
+    const live = livePrices.get(ticker.symbol);
+    if (live) return live;
+    return {
+      ...ticker,
+      change: 0,
+      changePercent: 0,
+      lastUpdate: 0,
+    };
+  });
+
+  // Use first ticker as fallback if nothing selected
+  const activeSymbol = selectedSymbol ?? initialTickers[0]?.symbol ?? null;
+
+  const selectedTicker = activeSymbol
+    ? (tickers.find((t) => t.symbol === activeSymbol) ?? null)
+    : null;
 
   const handlePriceUpdate = useCallback((data: PriceUpdate) => {
-    setTickers((prev) => {
+    setLivePrices((prev) => {
       const existing = prev.get(data.symbol);
       if (!existing) return prev;
 
@@ -59,16 +64,29 @@ export function useTickers() {
     setConnectionStatus(status);
   }, []);
 
-  const tickerList = Array.from(tickers.values());
-  const selectedTicker = selectedSymbol
-    ? (tickers.get(selectedSymbol) ?? null)
-    : null;
+  const initTickers = useCallback((tickerList: Ticker[]) => {
+    setLivePrices((prev) => {
+      const next = new Map(prev);
+      for (const ticker of tickerList) {
+        if (!next.has(ticker.symbol)) {
+          next.set(ticker.symbol, {
+            ...ticker,
+            change: 0,
+            changePercent: 0,
+            lastUpdate: Date.now(),
+          });
+        }
+      }
+      return next;
+    });
+  }, []);
 
   return {
-    tickers: tickerList,
+    tickers,
     selectedTicker,
-    selectedSymbol,
+    selectedSymbol: activeSymbol,
     connectionStatus,
+    isLoading,
     setSelectedSymbol,
     initTickers,
     handlePriceUpdate,
