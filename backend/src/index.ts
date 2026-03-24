@@ -5,6 +5,8 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import tickerRoutes from './routes/tickers.js';
 import alertRoutes from './routes/alerts.js';
+import authRoutes from './routes/auth.js';
+import { verifyToken } from './middleware/auth.js';
 import { setupWebSocket } from './services/websocket.js';
 
 const app = express();
@@ -20,12 +22,15 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// Public routes
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+app.use('/api/auth', authRoutes);
 
-app.use('/api/tickers', tickerRoutes);
-app.use('/api/alerts', alertRoutes);
+// Protected routes
+app.use('/api/tickers', verifyToken, tickerRoutes);
+app.use('/api/alerts', verifyToken, alertRoutes);
 
 const server = createServer(app);
 setupWebSocket(server);
