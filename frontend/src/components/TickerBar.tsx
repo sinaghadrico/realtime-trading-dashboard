@@ -33,7 +33,7 @@ const TickerChip = memo(function TickerChip({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex flex-shrink-0 items-center gap-2 rounded-lg border px-3 py-2 transition-colors',
+        'flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 transition-colors',
         isSelected
           ? 'border-primary bg-accent'
           : 'border-transparent bg-muted/50 hover:bg-muted',

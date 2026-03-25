@@ -97,7 +97,7 @@ export function Dashboard() {
   return (
     <div className="flex h-[calc(100vh-65px)] flex-col md:flex-row">
       {isDesktop && (
-        <aside className="w-72 flex-shrink-0 overflow-y-auto border-r p-4">
+        <aside className="w-72 shrink-0 overflow-y-auto border-r p-4">
           <div className="mb-3 flex items-center justify-between">
             <Typography variant="h4">Tickers</Typography>
             <ConnectionStatus status={connectionStatus} />

@@ -32,7 +32,7 @@ export const TickerItem = memo(function TickerItem({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors',
+        'flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors',
         'hover:bg-accent/50',
         isSelected && 'bg-accent',
       )}
