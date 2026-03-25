@@ -19,6 +19,11 @@ spec:
           image: trading-frontend:latest
           ports:
             - containerPort: 80
+          env:
+            - name: BACKEND_HOST
+              value: trading-backend
+            - name: BACKEND_PORT
+              value: '3075'
           resources:
             requests:
               memory: '64Mi'

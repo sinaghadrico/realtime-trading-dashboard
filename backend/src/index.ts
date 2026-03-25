@@ -9,13 +9,14 @@ import authRoutes from './routes/auth.js';
 import { verifyToken } from './middleware/auth.js';
 import { setupWebSocket } from './services/websocket.js';
 
+import { config } from './config.js';
+
 const app = express();
-const PORT = process.env.PORT || 3075;
 
 app.use(compression());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5178',
+    origin: config.corsOrigin,
     credentials: true,
   }),
 );
@@ -35,11 +36,11 @@ app.use('/api/alerts', verifyToken, alertRoutes);
 const server = createServer(app);
 setupWebSocket(server);
 
-server.listen(PORT, () => {
+server.listen(config.port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${config.port}`);
   // eslint-disable-next-line no-console
-  console.log(`WebSocket available at ws://localhost:${PORT}/ws`);
+  console.log(`WebSocket available at ws://localhost:${config.port}/ws`);
 });
 
 export default app;

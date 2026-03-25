@@ -22,6 +22,8 @@ spec:
           env:
             - name: PORT
               value: '3075'
+            - name: NODE_ENV
+              value: production
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

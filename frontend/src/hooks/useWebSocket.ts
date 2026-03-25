@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { WSServerMessage, PriceUpdate } from '@/types';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3075';
+import { WS_URL } from '@/lib/constants';
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
 

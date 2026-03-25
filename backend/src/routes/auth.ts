@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import { config } from '../config.js';
 
 const router = Router();
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key';
 const COOKIE_MAX_AGE = 24 * 60 * 60 * 1000; // 1 day
 
 // Mock user
@@ -32,13 +31,13 @@ router.post('/login', (req, res) => {
 
   const token = jwt.sign(
     { userId: MOCK_USER.userId, email: MOCK_USER.email },
-    JWT_SECRET,
+    config.jwtSecret,
     { expiresIn: '24h' },
   );
 
   res.cookie('token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: config.isProduction,
     sameSite: 'strict',
     maxAge: COOKIE_MAX_AGE,
   });
@@ -64,7 +63,7 @@ router.get('/me', (req, res) => {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as {
+    const payload = jwt.verify(token, config.jwtSecret) as {
       userId: string;
       email: string;
     };

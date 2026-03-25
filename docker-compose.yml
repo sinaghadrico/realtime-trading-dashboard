@@ -5,18 +5,22 @@ services:
       dockerfile: Dockerfile
     ports:
       - '3075:3075'
-    environment:
-      - PORT=3075
-      - CORS_ORIGIN=http://localhost
-      - JWT_SECRET=docker-secret-key
+    env_file:
+      - ./backend/.env
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3075
+        VITE_WS_URL: ws://localhost:3075
     ports:
-      - '80:80'
+      - '5178:80'
+    environment:
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=3075
     depends_on:
       - backend
     restart: unless-stopped

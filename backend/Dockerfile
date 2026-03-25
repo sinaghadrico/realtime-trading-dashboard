@@ -19,7 +19,6 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 
 ENV NODE_ENV=production
-ENV PORT=3075
 
 EXPOSE 3075
 
