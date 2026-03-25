@@ -23,6 +23,7 @@ export function useWebSocket({
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disposedRef = useRef(false);
   const callbacksRef = useRef({ onPriceUpdate, onStatusChange, onAlert });
   const symbolsRef = useRef(symbols);
 
@@ -32,88 +33,84 @@ export function useWebSocket({
 
   useEffect(() => {
     symbolsRef.current = symbols;
-  }, [symbols]);
 
-  // Subscribe when symbols change and WS is open
-  useEffect(() => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-    if (symbols.length === 0) return;
-
-    symbols.forEach((symbol) => {
-      wsRef.current?.send(JSON.stringify({ type: 'subscribe', symbol }));
-    });
-  }, [symbols]);
-
-  const reconnect = useCallback(() => {
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
+    // Re-subscribe if WS is already open
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN && symbols.length > 0) {
+      symbols.forEach((symbol) => {
+        ws.send(JSON.stringify({ type: 'subscribe', symbol }));
+      });
     }
-    if (wsRef.current) {
-      wsRef.current.close(1000);
+  }, [symbols]);
+
+  const connect = useCallback(() => {
+    if (disposedRef.current) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.CONNECTING) return;
+
+    callbacksRef.current.onStatusChange?.('connecting');
+    const ws = new WebSocket(`${WS_URL}/ws`);
+
+    ws.onopen = () => {
+      if (disposedRef.current) {
+        ws.close(1000);
+        return;
+      }
+      callbacksRef.current.onStatusChange?.('connected');
+      reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+
+      symbolsRef.current.forEach((symbol) => {
+        ws.send(JSON.stringify({ type: 'subscribe', symbol }));
+      });
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data as string) as WSServerMessage;
+
+        if (message.type === 'price_update') {
+          callbacksRef.current.onPriceUpdate?.(message.data);
+        } else if (message.type === 'alert_triggered') {
+          callbacksRef.current.onAlert?.(message);
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    ws.onclose = (event) => {
       wsRef.current = null;
-    }
+      callbacksRef.current.onStatusChange?.('disconnected');
 
-    function connect() {
-      callbacksRef.current.onStatusChange?.('connecting');
-      const ws = new WebSocket(`${WS_URL}/ws`);
+      // Only reconnect on unexpected close
+      if (!disposedRef.current && event.code !== 1000) {
+        const delay = reconnectDelayRef.current;
+        reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
+        reconnectTimerRef.current = setTimeout(connect, delay);
+      }
+    };
 
-      ws.onopen = () => {
-        callbacksRef.current.onStatusChange?.('connected');
-        reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+    ws.onerror = () => {
+      // onclose will fire after onerror
+    };
 
-        // Subscribe to all current symbols
-        symbolsRef.current.forEach((symbol) => {
-          ws.send(JSON.stringify({ type: 'subscribe', symbol }));
-        });
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data as string) as WSServerMessage;
-
-          if (message.type === 'price_update') {
-            callbacksRef.current.onPriceUpdate?.(message.data);
-          } else if (message.type === 'alert_triggered') {
-            callbacksRef.current.onAlert?.(message);
-          }
-        } catch {
-          // ignore
-        }
-      };
-
-      ws.onclose = (event) => {
-        callbacksRef.current.onStatusChange?.('disconnected');
-        wsRef.current = null;
-
-        if (event.code !== 1000) {
-          const delay = reconnectDelayRef.current;
-          reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
-          reconnectTimerRef.current = setTimeout(connect, delay);
-        }
-      };
-
-      ws.onerror = () => {
-        ws.close();
-      };
-
-      wsRef.current = ws;
-    }
-
-    connect();
+    wsRef.current = ws;
   }, []);
 
-  // Connect on mount
   useEffect(() => {
-    reconnect();
+    disposedRef.current = false;
+    connect();
 
     return () => {
+      disposedRef.current = true;
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
       }
       if (wsRef.current) {
         wsRef.current.close(1000);
         wsRef.current = null;
       }
     };
-  }, [reconnect]);
+  }, [connect]);
 }

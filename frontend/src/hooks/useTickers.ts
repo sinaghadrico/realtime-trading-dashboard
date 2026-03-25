@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useQueryState, parseAsString } from 'nuqs';
-import type { PriceUpdate, Ticker, TickerWithLive } from '@/types';
+import type { PriceUpdate, TickerWithLive } from '@/types';
 import type { ConnectionStatus } from '@/hooks/useWebSocket';
 import { fetchTickers } from '@/services/api';
 
@@ -63,23 +63,6 @@ export function useTickers() {
     setConnectionStatus(status);
   }, []);
 
-  const initTickers = useCallback((tickerList: Ticker[]) => {
-    setLivePrices((prev) => {
-      const next = new Map(prev);
-      for (const ticker of tickerList) {
-        if (!next.has(ticker.symbol)) {
-          next.set(ticker.symbol, {
-            ...ticker,
-            change: 0,
-            changePercent: 0,
-            lastUpdate: 0,
-          });
-        }
-      }
-      return next;
-    });
-  }, []);
-
   return {
     tickers,
     selectedTicker,
@@ -87,7 +70,6 @@ export function useTickers() {
     connectionStatus,
     isLoading,
     setSelectedSymbol,
-    initTickers,
     handlePriceUpdate,
     handleStatusChange,
   };
