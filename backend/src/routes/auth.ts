@@ -5,6 +5,12 @@ import { config } from '../config.js';
 const router = Router();
 const COOKIE_MAX_AGE = 24 * 60 * 60 * 1000; // 1 day
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: config.isProduction,
+  sameSite: (config.isProduction ? 'none' : 'strict') as 'none' | 'strict',
+};
+
 // Mock user
 const MOCK_USER = {
   userId: 'user_1',
@@ -36,9 +42,7 @@ router.post('/login', (req, res) => {
   );
 
   res.cookie('token', token, {
-    httpOnly: true,
-    secure: config.isProduction,
-    sameSite: config.isProduction ? 'none' : 'strict',
+    ...cookieOptions,
     maxAge: COOKIE_MAX_AGE,
   });
 
@@ -50,7 +54,7 @@ router.post('/login', (req, res) => {
 });
 
 router.post('/logout', (_req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', cookieOptions);
   res.json({ message: 'Logged out' });
 });
 
