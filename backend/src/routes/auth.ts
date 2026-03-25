@@ -38,7 +38,7 @@ router.post('/login', (req, res) => {
   res.cookie('token', token, {
     httpOnly: true,
     secure: config.isProduction,
-    sameSite: 'strict',
+    sameSite: config.isProduction ? 'none' : 'strict',
     maxAge: COOKIE_MAX_AGE,
   });
 
