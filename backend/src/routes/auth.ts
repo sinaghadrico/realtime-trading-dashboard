@@ -8,7 +8,7 @@ const COOKIE_MAX_AGE = 24 * 60 * 60 * 1000; // 1 day
 const cookieOptions = {
   httpOnly: true,
   secure: config.isProduction,
-  sameSite: (config.isProduction ? 'none' : 'strict') as 'none' | 'strict',
+  sameSite: 'strict' as const,
 };
 
 // Mock user

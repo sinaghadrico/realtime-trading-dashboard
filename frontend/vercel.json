@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://realtime-trading-dashboard-gosq.onrender.com/api/:path*"
+    },
+    {
+      "source": "/ws",
+      "destination": "https://realtime-trading-dashboard-gosq.onrender.com/ws"
+    }
+  ]
+}
