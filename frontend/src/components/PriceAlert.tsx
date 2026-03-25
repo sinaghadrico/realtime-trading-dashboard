@@ -39,11 +39,9 @@ export function PriceAlertButton({ symbol, currentPrice }: PriceAlertProps) {
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Bell className="h-4 w-4" />
-          Set Alert
-        </Button>
+      <AlertDialogTrigger className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent">
+        <Bell className="h-4 w-4" />
+        Set Alert
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
