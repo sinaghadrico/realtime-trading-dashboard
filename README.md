@@ -241,7 +241,8 @@ URL: ws://localhost:3075/ws
 
 - Mock implementation with **hardcoded credentials** (admin@trading.com / password123)
 - JWT stored in **httpOnly cookie** (not localStorage) to prevent XSS attacks
-- `sameSite: 'strict'` for CSRF protection
+- Same-origin deployment (Docker/K8s): `sameSite: 'strict'` for CSRF protection
+- Cross-origin deployment (e.g., Vercel + Render): `sameSite: 'none'` + `secure: true` for cookie to work across domains
 - Frontend never accesses the token directly — uses `credentials: 'include'`
 
 ### Chart
